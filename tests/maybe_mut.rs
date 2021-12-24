@@ -85,6 +85,6 @@ impl SomeStruct {
     }
     #[mwt]
     fn children_mwt(&mut self) -> &Mwt<Vec<SomeStruct>> {
-        &mwt!(self.a_vector)
+        &mwt(self.a_vector)
     }
 }

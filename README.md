@@ -16,7 +16,7 @@ mwt provides two mostly identical macros: `mwt` and `maybe_mut`
 
  both let you put `#[if_mut]` and `#[not_mut]` before blocks to have conditionally present sections.
 
- they also have a `mwt!()` and `maybe_mut!()` macro respectively for things like `return &mwt!(self.0)`
+ they also have a `mwt()` and `maybe_mut()` macro respectively for things like `return &mwt(self.0)`
 
  both also let you pass an argument `ignore_self` e.g. `#[mwt::maybe_mut(ignore_self)]` to stop mwt from messing with the `&self` (or `&mut self`) parameter. stripping `mut` from `&mut self` is the default because takeing `&T<self>` is a parse error, and most of the time this is the desired behavior (at least for my use cases).
 
@@ -38,7 +38,7 @@ impl SomeStruct {
     fn my_mwt_accessor(&mut self) -> &Mwt(SomeStruct) {
         let mut a = 0;
         a = a + 1;
-        let b = &mwt!(a);
+        let b = &mwt(a);
         #[if_mut] {
             println!("Hello from my_mut_accessor()!");
         }
@@ -101,7 +101,7 @@ Alternatively you can use `mwt::maybe_mut` if you feel that's more readable.
 `mwt::mwt` basically just replaces the function with two copies (i.e. a non-mut and mut version) and does a few things on those:
 
  - replace any occurrences of type references like `&Mwt<T>` with `&T` and `&mut T` respectively
- - replace any occurences of `mwt!(expr)` with `expr` and `mut expr` respectively
+ - replace any occurences of `mwt(expr)` with `expr` and `mut expr` respectively
  - for the non-mut version of the function, it takes all identifiers it finds and trims any starting "mwt\_" and ending "\_mwt" and replaces "\_mwt\_" with "\_"
  - for the mut version of the function, it takes all identifiers it finds and replaces any instances of "mwt" with "mut"
  - to allow for other ways behavior can differ, the mut version strips any occurences of `#[not_mut]{...}` and the non-mut version strips any occurrences of `#[if_mut]{...}` (the ones that aren't stripped have their braces removed, so be aware of that)

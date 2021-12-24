@@ -1,4 +1,4 @@
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::fold::Fold;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
@@ -124,9 +124,9 @@ impl Fold for Args {
                     Expr::Block(self.fold_expr_block(eb))
                 }
             }
-            Expr::Macro(e) => {
-                if e.mac.path.is_ident(&self.ident_string) {
-                    let inner = e.mac.tokens;
+            Expr::Call(e) => {
+                if e.func.to_token_stream().to_string() == self.ident_string {
+                    let inner = e.args;
                     if self.mut_version {
                         Expr::Verbatim(quote! {
                             mut #inner
@@ -137,7 +137,7 @@ impl Fold for Args {
                         })
                     }
                 } else {
-                    Expr::Macro(self.fold_expr_macro(e))
+                    Expr::Call(self.fold_expr_call(e))
                 }
             }
             Expr::Array(a) => Expr::Array(self.fold_expr_array(a)),
@@ -148,7 +148,6 @@ impl Fold for Args {
             Expr::Binary(e) => Expr::Binary(self.fold_expr_binary(e)),
             Expr::Box(e) => Expr::Box(self.fold_expr_box(e)),
             Expr::Break(e) => Expr::Break(self.fold_expr_break(e)),
-            Expr::Call(e) => Expr::Call(self.fold_expr_call(e)),
             Expr::Cast(e) => Expr::Cast(self.fold_expr_cast(e)),
             Expr::Closure(e) => Expr::Closure(self.fold_expr_closure(e)),
             Expr::Continue(e) => Expr::Continue(self.fold_expr_continue(e)),
@@ -160,6 +159,7 @@ impl Fold for Args {
             Expr::Let(e) => Expr::Let(self.fold_expr_let(e)),
             Expr::Lit(e) => Expr::Lit(self.fold_expr_lit(e)),
             Expr::Loop(e) => Expr::Loop(self.fold_expr_loop(e)),
+            Expr::Macro(e) => Expr::Macro(self.fold_expr_macro(e)),
             Expr::Match(e) => Expr::Match(self.fold_expr_match(e)),
             Expr::MethodCall(e) => Expr::MethodCall(self.fold_expr_method_call(e)),
             Expr::Paren(e) => Expr::Paren(self.fold_expr_paren(e)),

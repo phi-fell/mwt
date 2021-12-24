@@ -1,0 +1,11 @@
+{
+    "files.watcherExclude": {
+        "**/target/**": true
+    },
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "editor.formatOnSave": true,
+    "rust-analyzer.checkOnSave.enable": true,
+    "rust-analyzer.assist.importPrefix": "crate",
+    "rust-analyzer.checkOnSave.command": "clippy",
+}

@@ -18,7 +18,7 @@ mwt provides two mostly identical macros: `mwt` and `maybe_mut`
 
  they also have a `mwt()` and `maybe_mut()` function* respectively for things like `return &mwt(self.0)`
 
- both also let you pass an argument `ignore_self` e.g. `#[mwt::maybe_mut(ignore_self)]` to stop mwt from messing with the `&self` (or `&mut self`) parameter. stripping `mut` from `&mut self` is the default because takeing `&T<self>` is a parse error, and most of the time this is the desired behavior (at least for my use cases).
+ both also let you pass an argument `ignore_self` e.g. `#[mwt::maybe_mut(ignore_self)]` to stop mwt from messing with the `&self` (or `&mut self`) parameter. stripping `mut` from `&mut self` is the default because taking `&T<self>` is a parse error, and most of the time this is the desired behavior (at least for my use cases).
 
  there isn't currently a way to handle functions of the form `_ref`/`_mut` but one may be added in the future (maybe `rwf` which becomes either `ref` or `mut`?)
 
@@ -83,20 +83,51 @@ e.g.
 fn my_mwt_method(&'a mut self, other_param: i32) -> &Mwt<bool> {
     #[if_mut] {
         //code for only the mut version of the function
-        let a = 0;
+        let i = 0;
     }
     #[not_mut] {
         // code for only the non-mut version of the function
-        let a = 1;
+        let i= 1;
     }
-    // do something with a
-    self.get_mwt_flag_by_index(a)
+    // do something with i
+    self.get_mwt_flag_by_index(i)
 }
 ```
 
 Basically write the mutable version of your function, but for identifiers, replace `mut` with `mwt` and for types replace `&mut T` with `&Mwt<T>`
 
-Alternatively you can use `mwt::maybe_mut` if you feel that's more readable.
+Alternatively you can use `mwt::maybe_mut` if you feel that's more readable. example:
+
+```Rust
+#[mwt::maybe_mut]
+pub fn get_maybe_mut<T: 'static + Component>(&mut self) -> Option<&MaybeMut<T>> {
+    // use #[if_mut]{} and #[not_mut]{} for conditional behavior
+    //      or for cases where mwt isn't powerful enough yet
+    //      like .as_ref() vs .as_mut()
+    #[if_mut] { println!("if_mut"); }
+    #[not_mut] { println!("not_mut"); }
+    //   use &MaybeMut<T> for &mut types
+    let map: &MaybeMut<HashMap<TypeId,Box<dyn Component>>>
+    //    and &maybe_mut(...) for taking mut references
+            = &maybe_mut(self.components);
+    // use _maybe_mut_ in function calls, etc.
+    map.get_maybe_mut(&TypeId::of::<T>())
+        .and_then(|c| c.cast_maybe_mut::<T>())
+}
+```
+results in two functions:
+```Rust
+pub fn get_<T: 'static + Component>(& self) -> Option<&T> {
+    println!("not_mut"); 
+    let map: &HashMap<TypeId,Box<dyn Component>> = &self.components;
+    map.get(&TypeId::of::<T>()).and_then(|c| c.cast::<T>())
+}
+pub fn get_mut<T: 'static + Component>(&mut self) -> Option<&mut T> {
+    println!("if_mut");
+    let map: &mut HashMap<TypeId,Box<dyn Component>> = &mut self.components;
+    map.get_mut(&TypeId::of::<T>()).and_then(|c| c.cast_mut::<T>())
+}
+```
 
 ---
 ## What's it actually doing?

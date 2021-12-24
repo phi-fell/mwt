@@ -124,6 +124,22 @@ impl Fold for Args {
                     Expr::Block(self.fold_expr_block(eb))
                 }
             }
+            Expr::Macro(e) => {
+                if e.mac.path.is_ident(&self.ident_string) {
+                    let inner = e.mac.tokens;
+                    if self.mut_version {
+                        Expr::Verbatim(quote! {
+                            mut #inner
+                        })
+                    } else {
+                        Expr::Verbatim(quote! {
+                            #inner
+                        })
+                    }
+                } else {
+                    Expr::Macro(self.fold_expr_macro(e))
+                }
+            }
             Expr::Array(a) => Expr::Array(self.fold_expr_array(a)),
             Expr::Assign(e) => Expr::Assign(self.fold_expr_assign(e)),
             Expr::AssignOp(e) => Expr::AssignOp(self.fold_expr_assign_op(e)),
@@ -144,7 +160,6 @@ impl Fold for Args {
             Expr::Let(e) => Expr::Let(self.fold_expr_let(e)),
             Expr::Lit(e) => Expr::Lit(self.fold_expr_lit(e)),
             Expr::Loop(e) => Expr::Loop(self.fold_expr_loop(e)),
-            Expr::Macro(e) => Expr::Macro(self.fold_expr_macro(e)),
             Expr::Match(e) => Expr::Match(self.fold_expr_match(e)),
             Expr::MethodCall(e) => Expr::MethodCall(self.fold_expr_method_call(e)),
             Expr::Paren(e) => Expr::Paren(self.fold_expr_paren(e)),

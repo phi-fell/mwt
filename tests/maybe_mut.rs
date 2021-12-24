@@ -37,6 +37,15 @@ fn struct_test() {
     assert_eq!(s.id(), 12);
     assert_eq!(s.my_always_mut_fn_mut().id(), 0);
     assert_eq!(s.id(), 22);
+
+    for c in s.children_mut() {
+        c.id += 1;
+    }
+
+    let mut children = s.children().iter().map(|c| c.id());
+    assert_eq!(children.next(), Some(1));
+    assert_eq!(children.next(), Some(2));
+    assert_eq!(children.next(), None);
 }
 
 #[mwt]
@@ -73,5 +82,9 @@ impl SomeStruct {
     fn my_always_mut_fn_mwt(&mut self) -> &Mwt<SomeStruct> {
         self.id += 10;
         self.a_vector.get_mwt(0).unwrap()
+    }
+    #[mwt]
+    fn children_mwt(&mut self) -> &Mwt<Vec<SomeStruct>> {
+        &mwt!(self.a_vector)
     }
 }

@@ -16,11 +16,14 @@ mwt provides two mostly identical macros: `mwt` and `maybe_mut`
 
  both let you put `#[if_mut]` and `#[not_mut]` before blocks to have conditionally present sections.
 
- they also have a `mwt()` and `maybe_mut()` macro respectively for things like `return &mwt(self.0)`
+ they also have a `mwt()` and `maybe_mut()` function* respectively for things like `return &mwt(self.0)`
 
  both also let you pass an argument `ignore_self` e.g. `#[mwt::maybe_mut(ignore_self)]` to stop mwt from messing with the `&self` (or `&mut self`) parameter. stripping `mut` from `&mut self` is the default because takeing `&T<self>` is a parse error, and most of the time this is the desired behavior (at least for my use cases).
 
  there isn't currently a way to handle functions of the form `_ref`/`_mut` but one may be added in the future (maybe `rwf` which becomes either `ref` or `mut`?)
+
+
+ *Not actually a function, but the proc macro looks for it being used like a function call
 
 ## Example:
 

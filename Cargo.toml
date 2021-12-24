@@ -1,0 +1,17 @@
+[package]
+name = "mwt"
+version = "0.1.0"
+edition = "2021"
+description = "proc macros for generating mut and non-mut methods without duplicating code"
+homepage = "https://github.com/phi-fell/mwt"
+repository = "https://github.com/phi-fell/mwt"
+readme = "README.md"
+license = "MIT"
+exclude = [".vscode"]
+
+[dependencies]
+syn = { version = "1.0", features = ["full", "fold"] }
+quote = "1.0"
+
+[lib]
+proc-macro = true

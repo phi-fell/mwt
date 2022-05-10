@@ -136,11 +136,17 @@ pub fn get_mut<T: 'static + Component>(&mut self) -> Option<&mut T> {
 
  - replace any occurrences of type references like `&Mwt<T>` with `&T` and `&mut T` respectively
  - replace any occurences of `mwt(expr)` with `expr` and `mut expr` respectively
- - for the non-mut version of the function, it takes all identifiers it finds and trims any starting "mwt\_" and ending "\_mwt" and replaces "\_mwt\_" with "\_"
- - for the mut version of the function, it takes all identifiers it finds and replaces any instances of "mwt" with "mut"
+ - for the non-mut version of the function:
+    - it takes all identifiers it finds and trims any starting "mwt\_" and ending "\_mwt" and replaces "\_mwt\_" with "\_"
+    - it takes all types it finds and removes any instances of "Mwt"
+ - for the mut version of the function:
+    - it takes all identifiers it finds and replaces any instances of "mwt" with "mut"
+    - it takes all types it finds and replaces any instances of "Mwt" with "Mut"
  - to allow for other ways behavior can differ, the mut version strips any occurences of `#[not_mut]{...}` and the non-mut version strips any occurrences of `#[if_mut]{...}` (the ones that aren't stripped have their braces removed, so be aware of that)
+ - to allow for differing types, `MwtAlt<First, Second>` is replaced with either `First` or `Second` in the mut and non-mut versions respectively
 
  `mwt::maybe_mut` is identical just with different strings.
+ (`Mwt` -> `MaybeMut`, `mwt` -> `maybe_mut`, `MwtAlt` -> `MutOrElse`)
 
 
 ---

@@ -29,6 +29,8 @@ pub fn mwt(args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn maybe_mut(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut args = parse_macro_input!(args as Args);
     args.set_ident_str("maybe_mut".to_owned());
+    args.set_type_str("MaybeMut".to_owned());
+    args.set_type_switch_str("MutOrElse".to_owned());
     args.set_ref_str("MaybeMut".to_owned());
     do_parse(args, input)
 }

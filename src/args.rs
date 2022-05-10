@@ -1,14 +1,18 @@
 use quote::{quote, ToTokens};
-use syn::fold::Fold;
+use syn::fold::{fold_expr, fold_type_reference, Fold};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
 
-use syn::{Expr, GenericArgument, Ident, ItemFn, PathArguments, Token, Type, TypeReference};
+use syn::{
+    Expr, GenericArgument, Ident, ItemFn, PathArguments, PathSegment, Token, Type, TypeReference,
+};
 
 pub struct Args {
     mut_version: bool,
     ignore_self: bool,
     ident_string: String,
+    type_string: String,
+    type_switch_string: String,
     ref_string: String,
 }
 
@@ -16,6 +20,8 @@ impl Parse for Args {
     fn parse(input: ParseStream) -> Result<Self> {
         let mut ignore_self = false;
         let ident_string = "mwt".to_owned();
+        let type_string = "Mwt".to_owned();
+        let type_switch_string = "MwtAlt".to_owned();
         let ref_string = "Mwt".to_owned();
         for arg in Punctuated::<Ident, Token![,]>::parse_terminated(input)? {
             match arg.to_string().as_str() {
@@ -27,6 +33,8 @@ impl Parse for Args {
             mut_version: false,
             ignore_self,
             ident_string,
+            type_string,
+            type_switch_string,
             ref_string,
         })
     }
@@ -35,6 +43,12 @@ impl Parse for Args {
 impl Args {
     pub fn set_ident_str(&mut self, s: String) {
         self.ident_string = s;
+    }
+    pub fn set_type_str(&mut self, s: String) {
+        self.type_string = s;
+    }
+    pub fn set_type_switch_str(&mut self, s: String) {
+        self.type_string = s;
     }
     pub fn set_ref_str(&mut self, s: String) {
         self.ref_string = s;
@@ -68,6 +82,82 @@ impl Fold for Args {
             )
         }
     }
+    fn fold_type(&mut self, t: Type) -> Type {
+        match t {
+            Type::Path(t) => {
+                if t.path.leading_colon.is_none() && t.path.segments.len() == 1 {
+                    // borrow path segments since we don't want to destructively modify t yet
+                    let ps = t.path.segments.first().unwrap(/* len() is checked above */);
+                    if ps.ident == self.type_switch_string {
+                        // we can now move out of t, since we will either be returning something else, or panicking
+                        let ps =
+                            t.path.segments.into_iter().next().unwrap(/* len() is checked above */);
+                        if let PathArguments::AngleBracketed(args) = ps.arguments {
+                            if args.args.len() == 2 {
+                                if self.mut_version {
+                                    match args.args.into_iter().next().unwrap(/* len() is checked above */)
+                                    {
+                                        GenericArgument::Type(t) => return t,
+                                        _ => panic!(
+                                            "First argument to `{0}` is invalid! Must be a type (not a lifetime/constraint/etc)!",
+                                            self.type_switch_string
+                                        ),
+                                    }
+                                } else {
+                                    match args.args.into_iter().next_back().unwrap(/* len() is checked above */)
+                                    {
+                                        GenericArgument::Type(t) => return t,
+                                        _ => panic!(
+                                            "Second argument to `{0}` is invalid! Must be a type (not a lifetime/constraint/etc)!",
+                                            self.type_switch_string
+                                        ),
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "`{0}` needs exactly 2 type parameters, e.g. `{0}<A, B>`",
+                                    self.type_switch_string
+                                );
+                            }
+                        } else {
+                            panic!(
+                                "`{0}` needs bracketed type parameters, e.g. `{0}<A, B>`",
+                                self.type_switch_string
+                            );
+                        }
+                    }
+                }
+                Type::Path(self.fold_type_path(t))
+            }
+            Type::Array(t) => Type::Array(self.fold_type_array(t)),
+            Type::BareFn(t) => Type::BareFn(self.fold_type_bare_fn(t)),
+            Type::Group(t) => Type::Group(self.fold_type_group(t)),
+            Type::ImplTrait(t) => Type::ImplTrait(self.fold_type_impl_trait(t)),
+            Type::Infer(t) => Type::Infer(self.fold_type_infer(t)),
+            Type::Macro(t) => Type::Macro(self.fold_type_macro(t)),
+            Type::Never(t) => Type::Never(self.fold_type_never(t)),
+            Type::Paren(t) => Type::Paren(self.fold_type_paren(t)),
+            Type::Ptr(t) => Type::Ptr(self.fold_type_ptr(t)),
+            Type::Reference(t) => Type::Reference(self.fold_type_reference(t)),
+            Type::Slice(t) => Type::Slice(self.fold_type_slice(t)),
+            Type::TraitObject(t) => Type::TraitObject(self.fold_type_trait_object(t)),
+            Type::Tuple(t) => Type::Tuple(self.fold_type_tuple(t)),
+            Type::Verbatim(_) => t,
+            _ => t,
+        }
+    }
+    fn fold_path_segment(&mut self, ps: PathSegment) -> PathSegment {
+        let s = if self.mut_version {
+            ps.ident.to_string().replace(&self.type_string, "Mut")
+        } else {
+            ps.ident.to_string().replace(&self.type_string, "")
+        };
+        let ident = Ident::new(&s, ps.ident.span());
+        PathSegment {
+            ident,
+            arguments: ps.arguments,
+        }
+    }
     fn fold_type_reference(&mut self, tr: TypeReference) -> TypeReference {
         match *tr.elem.clone() {
             Type::Path(tp) => {
@@ -94,9 +184,9 @@ impl Fold for Args {
                         }
                     }
                 }
-                tr
+                fold_type_reference(self, tr)
             }
-            _ => tr,
+            _ => fold_type_reference(self, tr),
         }
     }
     fn fold_expr(&mut self, e: Expr) -> Expr {
@@ -140,45 +230,7 @@ impl Fold for Args {
                     Expr::Call(self.fold_expr_call(e))
                 }
             }
-            Expr::Array(a) => Expr::Array(self.fold_expr_array(a)),
-            Expr::Assign(e) => Expr::Assign(self.fold_expr_assign(e)),
-            Expr::AssignOp(e) => Expr::AssignOp(self.fold_expr_assign_op(e)),
-            Expr::Async(e) => Expr::Async(self.fold_expr_async(e)),
-            Expr::Await(e) => Expr::Await(self.fold_expr_await(e)),
-            Expr::Binary(e) => Expr::Binary(self.fold_expr_binary(e)),
-            Expr::Box(e) => Expr::Box(self.fold_expr_box(e)),
-            Expr::Break(e) => Expr::Break(self.fold_expr_break(e)),
-            Expr::Cast(e) => Expr::Cast(self.fold_expr_cast(e)),
-            Expr::Closure(e) => Expr::Closure(self.fold_expr_closure(e)),
-            Expr::Continue(e) => Expr::Continue(self.fold_expr_continue(e)),
-            Expr::Field(e) => Expr::Field(self.fold_expr_field(e)),
-            Expr::ForLoop(e) => Expr::ForLoop(self.fold_expr_for_loop(e)),
-            Expr::Group(e) => Expr::Group(self.fold_expr_group(e)),
-            Expr::If(e) => Expr::If(self.fold_expr_if(e)),
-            Expr::Index(e) => Expr::Index(self.fold_expr_index(e)),
-            Expr::Let(e) => Expr::Let(self.fold_expr_let(e)),
-            Expr::Lit(e) => Expr::Lit(self.fold_expr_lit(e)),
-            Expr::Loop(e) => Expr::Loop(self.fold_expr_loop(e)),
-            Expr::Macro(e) => Expr::Macro(self.fold_expr_macro(e)),
-            Expr::Match(e) => Expr::Match(self.fold_expr_match(e)),
-            Expr::MethodCall(e) => Expr::MethodCall(self.fold_expr_method_call(e)),
-            Expr::Paren(e) => Expr::Paren(self.fold_expr_paren(e)),
-            Expr::Path(e) => Expr::Path(self.fold_expr_path(e)),
-            Expr::Range(e) => Expr::Range(self.fold_expr_range(e)),
-            Expr::Reference(e) => Expr::Reference(self.fold_expr_reference(e)),
-            Expr::Repeat(e) => Expr::Repeat(self.fold_expr_repeat(e)),
-            Expr::Return(e) => Expr::Return(self.fold_expr_return(e)),
-            Expr::Struct(e) => Expr::Struct(self.fold_expr_struct(e)),
-            Expr::Try(e) => Expr::Try(self.fold_expr_try(e)),
-            Expr::TryBlock(e) => Expr::TryBlock(self.fold_expr_try_block(e)),
-            Expr::Tuple(e) => Expr::Tuple(self.fold_expr_tuple(e)),
-            Expr::Type(e) => Expr::Type(self.fold_expr_type(e)),
-            Expr::Unary(e) => Expr::Unary(self.fold_expr_unary(e)),
-            Expr::Unsafe(e) => Expr::Unsafe(self.fold_expr_unsafe(e)),
-            Expr::While(e) => Expr::While(self.fold_expr_while(e)),
-            Expr::Yield(e) => Expr::Yield(self.fold_expr_yield(e)),
-            Expr::Verbatim(e) => Expr::Verbatim(e),
-            _ => e,
+            _ => fold_expr(self, e),
         }
     }
 }

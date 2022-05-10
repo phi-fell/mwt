@@ -88,3 +88,47 @@ impl SomeStruct {
         &mwt(self.a_vector)
     }
 }
+
+#[test]
+fn return_type_test() {
+    let result = get_guard_mut();
+    assert_eq!(GuardTypeMut {}, result);
+
+    let result = get_guard();
+    assert_eq!(GuardType {}, result);
+
+    let result = get_struct_mut();
+    assert_eq!(StructA {}, result);
+
+    let result = get_struct();
+    assert_eq!(StructB {}, result);
+}
+
+#[derive(PartialEq, Debug)]
+struct GuardType {}
+
+#[derive(PartialEq, Debug)]
+struct GuardTypeMut {}
+
+#[mwt]
+fn get_guard_mwt() -> GuardTypeMwt {
+    GuardTypeMwt {}
+}
+
+#[derive(PartialEq, Debug)]
+struct StructA {}
+
+#[derive(PartialEq, Debug)]
+struct StructB {}
+
+#[mwt]
+fn get_struct_mwt() -> MwtAlt<StructA, StructB> {
+    #[if_mut]
+    {
+        StructA {}
+    }
+    #[not_mut]
+    {
+        StructB {}
+    }
+}

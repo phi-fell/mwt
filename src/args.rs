@@ -1,5 +1,5 @@
 use quote::{quote, ToTokens};
-use syn::fold::{fold_expr, fold_type_reference, Fold};
+use syn::fold::{fold_expr, fold_type, fold_type_reference, Fold};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
 
@@ -129,21 +129,7 @@ impl Fold for Args {
                 }
                 Type::Path(self.fold_type_path(t))
             }
-            Type::Array(t) => Type::Array(self.fold_type_array(t)),
-            Type::BareFn(t) => Type::BareFn(self.fold_type_bare_fn(t)),
-            Type::Group(t) => Type::Group(self.fold_type_group(t)),
-            Type::ImplTrait(t) => Type::ImplTrait(self.fold_type_impl_trait(t)),
-            Type::Infer(t) => Type::Infer(self.fold_type_infer(t)),
-            Type::Macro(t) => Type::Macro(self.fold_type_macro(t)),
-            Type::Never(t) => Type::Never(self.fold_type_never(t)),
-            Type::Paren(t) => Type::Paren(self.fold_type_paren(t)),
-            Type::Ptr(t) => Type::Ptr(self.fold_type_ptr(t)),
-            Type::Reference(t) => Type::Reference(self.fold_type_reference(t)),
-            Type::Slice(t) => Type::Slice(self.fold_type_slice(t)),
-            Type::TraitObject(t) => Type::TraitObject(self.fold_type_trait_object(t)),
-            Type::Tuple(t) => Type::Tuple(self.fold_type_tuple(t)),
-            Type::Verbatim(_) => t,
-            _ => t,
+            _ => fold_type(self, t),
         }
     }
     fn fold_path_segment(&mut self, ps: PathSegment) -> PathSegment {

@@ -96,6 +96,8 @@ fn my_mwt_method(&'a mut self, other_param: i32) -> &Mwt<bool> {
 
 Basically write the mutable version of your function, but for identifiers, replace `mut` with `mwt` and for types replace `&mut T` with `&Mwt<T>`
 
+You can also use `Mwt` in types e.g. `MyMwtType` becomes `MyMutType` and `MyType`
+
 Alternatively you can use `mwt::maybe_mut` if you feel that's more readable. example:
 
 ```Rust

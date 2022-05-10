@@ -38,7 +38,7 @@ struct SomeStruct {
 
 impl SomeStruct {
     #[mwt]
-    fn my_mwt_accessor(&mut self) -> &Mwt(SomeStruct) {
+    fn my_mwt_accessor(&mut self) -> &Mwt<SomeStruct> {
         let mut a = 0;
         a = a + 1;
         let b = &mwt(a);

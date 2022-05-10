@@ -3,8 +3,8 @@
 ## Hey! You! Read this before using!
 
 ### mwt was thrown together pretty quickly for personal use, because I couldn't find an existing crate that does this.
-### I've been using it for a few months now and there haven't been any major issues, but there very well might be bugs.
-### There are definitely some of edge cases that haven't been considered, and the error messages are rather poor.
+### I've been using it for a few months now and I haven't had any major issues, but there very well might be bugs.
+### There are definitely some edge cases that haven't been considered, and the error messages are rather poor.
 ### It should improve as I use it and fix issues I find, but caveat emptor or whatever
 
 ---

@@ -1,6 +1,6 @@
 [package]
 name = "mwt"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 description = "proc macros for generating mut and non-mut methods without duplicating code"
 homepage = "https://github.com/phi-fell/mwt"

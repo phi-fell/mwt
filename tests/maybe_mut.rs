@@ -16,6 +16,21 @@ fn simple_test() {
 }
 
 #[test]
+fn opt_test() {
+    assert_eq!(my_opt_function(None), None);
+
+    let mut u = 3u64;
+
+    let o = Some(&mut u);
+    let o = my_opt_mut_function(o);
+
+    let v = *(o.unwrap());
+
+    assert_eq!(v, 6u64);
+    assert_eq!(u, 6u64);
+}
+
+#[test]
 fn struct_test() {
     let a = SomeStruct {
         id: 0,
@@ -53,6 +68,18 @@ fn my_mwt_function(val: &Mwt<i32>) -> &Mwt<i32> {
     val
 }
 
+#[mwt]
+fn my_opt_mwt_function(val: Option<&Mwt<u64>>) -> Option<&Mwt<u64>> {
+    if let Some(v) = val {
+        #[if_mut]
+        {
+            *v *= 2;
+        }
+        Some(v)
+    } else {
+        None
+    }
+}
 struct SomeStruct {
     id: usize,
     a_vector: Vec<SomeStruct>,

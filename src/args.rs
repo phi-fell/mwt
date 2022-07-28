@@ -1,5 +1,5 @@
 use quote::{quote, ToTokens};
-use syn::fold::{fold_expr, fold_type, fold_type_reference, Fold};
+use syn::fold::{fold_expr, fold_path_arguments, fold_type, fold_type_reference, Fold};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
 
@@ -141,7 +141,7 @@ impl Fold for Args {
         let ident = Ident::new(&s, ps.ident.span());
         PathSegment {
             ident,
-            arguments: ps.arguments,
+            arguments: fold_path_arguments(self, ps.arguments),
         }
     }
     fn fold_type_reference(&mut self, tr: TypeReference) -> TypeReference {

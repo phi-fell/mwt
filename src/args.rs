@@ -134,9 +134,18 @@ impl Fold for Args {
     }
     fn fold_path_segment(&mut self, ps: PathSegment) -> PathSegment {
         let s = if self.mut_version {
-            ps.ident.to_string().replace(&self.type_string, "Mut")
+            ps.ident
+                .to_string()
+                .replace(&self.type_string, "Mut")
+                .replace(&self.ident_string, "mut")
         } else {
-            ps.ident.to_string().replace(&self.type_string, "")
+            ps.ident
+                .to_string()
+                .replace(&self.type_string, "")
+                .replace(&format!("_{}_", self.ident_string), "_")
+                .trim_start_matches(&format!("{}_", self.ident_string))
+                .trim_end_matches(&format!("_{}", self.ident_string))
+                .to_owned()
         };
         let ident = Ident::new(&s, ps.ident.span());
         PathSegment {
